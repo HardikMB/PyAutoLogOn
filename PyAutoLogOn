@@ -1,0 +1,185 @@
+from selenium import webdriver
+from selenium.webdriver.common.keys import Keys
+
+import subprocess
+import time
+import datetime
+import wmi
+import os
+from subprocess import call, PIPE, STDOUT
+import shlex
+from ghost import Ghost
+#import logging
+
+
+ 
+    
+def IsInternetOn():
+    try:
+        print datetime.datetime.now(),"Checking for Internet"   
+        
+        driver = webdriver.Firefox()
+
+        driver.set_window_position(-2000, 0)
+        driver.get("https://www.google.co.in")
+        
+        if (driver.title.find("Google") != 0) :
+            print  datetime.datetime.now(),"Google Failed to load"
+            print datetime.datetime.now(),"Internet Not Found"
+            return False
+        else:
+            print datetime.datetime.now(),"Internet Found!"
+            #print driver.page_source
+            return True
+    except Exception , e:  
+         print datetime.datetime.now(),logging.exception(e)
+         pass
+         return False
+    finally:
+        QuitFireFox()
+
+
+
+def EnableWiFiAdapter():
+    try:
+         print datetime.datetime.now(),"Enabling Wifi Adapter"
+         EnableAdapter = subprocess.Popen('netsh interface set interface name ="Wi-Fi" admin = enabled',shell =True, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+         IsEnabled ,Err1= EnableAdapter.communicate()
+         print datetime.datetime.now(),"Wifi Adapter Enabled"
+         return True
+    except Exception , e:  
+         print datetime.datetime.now(),logging.exception(e)
+         pass
+    print datetime.datetime.now(),"Wifi Adapter Could not be enabled"
+    return False
+
+def ConnectToSTES():
+    try:
+       print datetime.datetime.now(),"Connecting to STES WiFi" 
+       ConnWifi = subprocess.Popen( 'netsh wlan connect stes',shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+       ConnWifi.communicate()
+       print datetime.datetime.now(),"Connected to STES" 
+    except Exception , e:  
+         print datetime.datetime.now(),logging.exception(e)
+         pass
+      
+def IsConnected():
+    try:
+       print datetime.datetime.now(),"Checking if still connected to STES Network" 
+       c = wmi.WMI(moniker = "//./root/cimv2")
+       for AdapterInfo in c.win32_networkadapter():
+         if AdapterInfo.Index == 2:
+               #print AdapterInfo
+               if AdapterInfo.NetConnectionStatus==2:
+                     print datetime.datetime.now(),"Network is not Disconnected"
+                     return True
+               else:
+                     print datetime.datetime.now(),"Network is disconnected" 
+                     return False 
+    except Exception , e:  
+         print datetime.datetime.now(),logging.exception(e)
+         pass   
+    print datetime.datetime.now(),"Network is disconnected"  
+    return False
+ 
+
+def IsAdapterEnabled():
+    try:
+       print datetime.datetime.now(),"Checking if Network Adapter is Enabled" 
+       c = wmi.WMI(moniker = "//./root/cimv2")
+    
+       
+       for AdapterInfo in c.win32_networkadapter():
+         if AdapterInfo.Index == 2:
+               if AdapterInfo.ConfigManagerErrorCode == 0:
+                     print datetime.datetime.now(),"Wifi Adapter is working normally"
+                     return True
+               else:
+                     print datetime.datetime.now(),"Wifi Adapter is not working properly" 
+                     return False
+    except Exception , e:  
+         print datetime.datetime.now(),logging.exception(e)
+         pass
+    print datetime.datetime.now(),"Wifi Adapter is not working properly" 
+    return False
+      
+def ProcessLogin():
+    try:
+        print datetime.datetime.now(),"Now authenticating to Web "
+        driver = webdriver.Firefox()
+        driver.set_window_size(1,1)
+        driver.set_window_position(-2000, 0) 
+        driver.get("https://1.1.1.1/login.html")
+        if (driver.title.find("Problem") != -1 and driver.title.find("Web") == 0) :
+            print "Web Authentication Failed to load", datetime.datetime.now()
+            return False
+        else:
+            print "Login Page Loaded Successfully:"
+            #print driver.page_source 
+        user = driver.find_element_by_name("username")
+        passwd = driver.find_element_by_name("password")
+        user.send_keys("VB160494")
+        passwd.send_keys("278782")
+        passwd.send_keys(Keys.RETURN)
+        print datetime.datetime.now(),"Now,I will wait for 20 seconds for logging in"
+        time.sleep(20)
+        print datetime.datetime.now(),"Successfully Logged In."
+        return True
+    except Exception , e:  
+        print datetime.datetime.now(),logging.exception(e)
+        pass 
+        print datetime.datetime.now(),"Unsuccessful Login."
+        return False
+    finally:
+            QuitFireFox()
+      
+def QuitFireFox():
+   try:
+     c = wmi.WMI()
+     for process in c.Win32_Process (name = "firefox.exe"):
+           process.Terminate()
+     print datetime.datetime.now(),"Firefox was killed" 
+     return True
+   except Exception,e:
+     print datetime.datetime.now(),logging.exception(e)   
+     pass
+   print datetime.datetime.now(),"Firefox was not killed"
+   return False 
+    
+
+    
+while True :
+ 
+ try:
+    print "---------------------------------------------------------"
+    if(IsAdapterEnabled()):
+      if(IsConnected()):
+         if(IsInternetOn()):
+             print datetime.datetime.now(),"Now,I will wait for 2 minutes"
+             time.sleep(120)
+             continue   
+         else:
+            if(ProcessLogin()):
+               print datetime.datetime.now(),"Welcome to the world of Internet"
+               print datetime.datetime.now(),"Now,I will wait for 6 minutes"
+               time.sleep(600)
+            else:
+               ProcessLogin() 
+               continue    
+      else:
+         ConnectToSTES()
+         continue
+    else:
+      print datetime.datetime.now(),"Enabling Wifi..."    
+      if(EnableWiFiAdapter()):
+        print datetime.datetime.now(),"Wifi Adapter Enabled."
+      else:
+        print datetime.datetime.now(),"Wifi Adapter could not be Enabled"    
+    time.sleep(20)
+    continue 
+ 
+    
+ except Exception , e:
+    print datetime.datetime.now(),logging.exception(e)
+    pass
+       
