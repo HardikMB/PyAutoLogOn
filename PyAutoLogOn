@@ -1,6 +1,5 @@
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
-
 import subprocess
 import time
 import datetime
@@ -8,7 +7,7 @@ import wmi
 import os
 from subprocess import call, PIPE, STDOUT
 import shlex
-from ghost import Ghost
+#from ghost import Ghost
 #import logging
 
 
